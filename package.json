@@ -1,0 +1,15 @@
+
+{
+  "name": "whatsapp-telegram-bridge",
+  "version": "1.0.0",
+  "description": "Ponte da WhatsApp a Telegram per protocolli Flora",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.20.1"
+  }
+}
