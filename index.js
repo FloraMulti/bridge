@@ -1,69 +1,58 @@
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const TelegramBot = require("node-telegram-bot-api");
 
-// Configurazione bot Telegram
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN; 
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const telegramBot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
-
-// Configurazione server web Express
 const app = express();
-const PORT = process.env.PORT || 3000;
-let currentQr = null;
+const PORT = process.env.PORT || 10000;
 
-// Configurazione client WhatsApp
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
+});
+
+const telegramBot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
+
+client.on('qr', (qr) => {
+    console.log("🔄 QR Code aggiornato! Vai su / per scansionarlo.");
+    qrcode.generate(qr, { small: true });
+    qrCodeData = qr;
+});
+
+let qrCodeData = "";
+
+app.get('/', (req, res) => {
+    if (!qrCodeData) {
+        return res.send('QR Code non disponibile. Riprova tra poco.');
     }
+    res.send(`<html><body><h1>Scansiona il QR Code</h1><img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCodeData)}&size=300x300" /></body></html>`);
 });
 
-// Quando WhatsApp genera un QR, lo salviamo
-client.on("qr", (qr) => {
-    currentQr = qr;
-    console.log("✅ QR Code aggiornato! Vai su / per scansionarlo.");
+app.listen(PORT, () => {
+    console.log(`🌐 Server QR disponibile su porta ${PORT}`);
 });
 
-// Quando il client WhatsApp è pronto
-client.on("ready", () => {
+client.on('ready', () => {
     console.log("✅ WhatsApp client pronto");
     telegramBot.sendMessage(TELEGRAM_CHAT_ID, "✅ FloraBot avviato correttamente e collegato a WhatsApp!");
 });
 
-// Quando arriva un messaggio su WhatsApp
-client.on("message", async (message) => {
+// Quando riceve un messaggio WhatsApp
+client.on('message', async (message) => {
+    console.log("📩 Ricevuto messaggio:", message.body);
     try {
-        const chat = await message.getChat();
-        if (message.body) { 
-            telegramBot.sendMessage(TELEGRAM_CHAT_ID, `[Messaggio da WhatsApp]\n${message.body}`);
-            console.log("➡️ Inoltrato messaggio su Telegram:", message.body);
+        if (message.body) {
+            telegramBot.sendMessage(TELEGRAM_CHAT_ID, `[WhatsApp]\n${message.body}`);
+            console.log("➡️ Inoltrato su Telegram:", message.body);
         }
     } catch (err) {
-        console.error("❌ Errore:", err.message);
+        console.error("❌ Errore nell'inoltro:", err.message);
     }
 });
 
-// Inizializza il client WhatsApp
 client.initialize();
-
-// Rende il QR disponibile su una pagina web
-app.get("/", (req, res) => {
-    if (!currentQr) {
-        return res.send("<h1>QR non ancora disponibile... attendi!</h1>");
-    }
-    res.send(`
-        <html>
-            <body style="text-align:center;margin-top:50px;">
-                <h1>Scansiona questo QR Code per collegare WhatsApp</h1>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(currentQr)}&size=300x300" />
-            </body>
-        </html>
-    `);
-});
-
-// Avvia il server web
-app.listen(PORT, () => {
-    console.log(`🌐 Server QR disponibile su porta ${PORT}`);
-});
