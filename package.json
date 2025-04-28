@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-telegram-bridge",
+  "version": "1.0.0",
+  "description": "Bridge tra WhatsApp e Telegram",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.21.1",
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
